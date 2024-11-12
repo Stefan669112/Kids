@@ -1,13 +1,11 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import Image from "next/image";
 import { isMobile } from "react-device-detect";
-
 import CheckOnDesktop from "../public/check-on-desktop.svg";
 import Header from "../components/Header";
-import { NFTList } from "../components/NFTList";  // Make sure it's NFTList
-
+import { NFTList } from "../components/NFTList";  // Ensure NFTList is still correct
 import { ElementsContainer } from "../components/ElementsContainer";
 
 export default function Home() {
@@ -15,17 +13,9 @@ export default function Home() {
   const [isElementsModalOpen, setIsElementsModalOpen] = useState<boolean>(false);
   const router = useRouter();
 
-  function isValidAddressWithPrefix(address: string, prefix: string): boolean {
-    const isValidPrefix = address.startsWith(prefix);
-    const isValidLength = address.length > prefix.length + 5;
-    return isValidPrefix && isValidLength;
-  }
-
   useEffect(() => {
     if (typeof router.query.collectionAddress === "string") {
-      if (isValidAddressWithPrefix(router.query.collectionAddress, "stars")) {
-        setCollection(router.query.collectionAddress);
-      }
+      setCollection(router.query.collectionAddress);
     }
   }, [router.query]);
 

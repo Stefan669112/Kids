@@ -5,6 +5,12 @@ import Text from "./Text";
 import { IoMdCloseCircle } from "react-icons/io";
 import Web3 from "web3";
 
+// Function to truncate wallet address (e.g., 0x1234...abcd)
+const sliceAddress = (address: string): string => {
+  if (!address) return "";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
 interface WalletButtonOptions { 
   openEmbeddedWalletModal: Function 
 }
