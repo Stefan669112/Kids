@@ -1,14 +1,12 @@
-import { LiquidityModal } from "@leapwallet/elements";
-
-import { useChain } from "@cosmos-kit/react";
-import { useElementsWalletClient } from "../config/walletclient";
+import { useEffect, useState } from "react";
+import Web3 from "web3";
 import Image from "next/image";
 import Text from "./Text";
 import StargazeLogo from "../public/stargaze-logo.svg";
-import { useEffect } from "react";
 
+// This is the render function for the button that will open MetaMask
 export const renderLiquidityButton = ({ onClick }: any) => {
-  return <button onClick={onClick} id="open-liquidity-modal-btn"></button>;
+  return <button onClick={onClick} id="open-liquidity-modal-btn">Connect MetaMask</button>;
 };
 
 interface Props {
@@ -16,6 +14,8 @@ interface Props {
   title?: string;
   subtitle?: string;
   customRenderLiquidityButton?: ({ onClick }: any) => JSX.Element;
+  isOpen: boolean;            // Added isOpen prop
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added setIsOpen prop
 }
 
 export function ElementsContainer({
@@ -23,64 +23,45 @@ export function ElementsContainer({
   title = "Buy Bad Kid #44",
   subtitle = "Price: 42K STARS",
   customRenderLiquidityButton,
+  isOpen,
+  setIsOpen,
 }: Props) {
-  const { address, openView } = useChain("stargaze");
-  const walletClient = useElementsWalletClient();
+  const [web3, setWeb3] = useState<Web3 | null>(null);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+
   useEffect(() => {
-    const elementsModal = document.querySelector(".leap-elements");
-    if (elementsModal) {
-      //@ts-ignore
-      elementsModal.style["zIndex"] = 11;
+    // Check if MetaMask (window.ethereum) is available
+    if (typeof window.ethereum !== "undefined") {
+      const newWeb3 = new Web3(window.ethereum);
+      setWeb3(newWeb3);
     }
   }, []);
+
+  const connectWallet = async () => {
+    if (web3) {
+      try {
+        // Request account access using MetaMask
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        setUserAddress(accounts[0]);
+        setIsConnected(true);
+      } catch (error) {
+        console.error("Error connecting to MetaMask", error);
+      }
+    }
+  };
+
   return (
     <div className="z-99">
-      <LiquidityModal
-        renderLiquidityButton={renderLiquidityButton}
-        theme="dark"
-        onTxnComplete={() => {}}
-        walletClientConfig={{
-          userAddress: address,
-          walletClient: walletClient,
-          connectWallet: async () => {
-            openView();
-          },
-        }}
-        config={{
-          icon: icon,
-          title,
-          subtitle,
-          tabsConfig: {
-            "cross-chain-swaps": {
-              title: "Bridge from Ethereum",
-              defaults: {
-                destinationChainId: "stargaze-1",
-                destinationAssetSelector: ["denom", "ustars"],
-              },
-            },
-            swap: {
-              title: "Bridge from Cosmos",
-              defaults: {
-                sourceChainId: "osmosis-1",
-                sourceAssetSelector: ["denom", "uosmo"],
-                destinationChainId: "stargaze-1",
-              },
-            },
-            "fiat-on-ramp": {
-              defaults: {
-                destinationAssetSelector: ["denom", "ustars"],
-                destinationChainId: "stargaze-1",
-              },
-            },
-            transfer: {
-              enabled: false,
-            },
-            "bridge-usdc": {
-              enabled: false,
-            },
-          },
-        }}
-      />
+      {isOpen && (
+        <div>
+          {/* Modal content */}
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+          <button onClick={connectWallet}>Connect MetaMask</button>
+          {isConnected && <p>Wallet Connected: {userAddress}</p>}
+        </div>
+      )}
     </div>
   );
 }
