@@ -1,10 +1,37 @@
+declare module '@leapwallet/elements-umd-types' {
+  // Define the shape of LeapElements as expected in the context
+  interface mountElementsArgs {
+    element: {
+      name: string;
+      props: {
+        title: string;
+        sourceHeader: string;
+        destinationHeader: string;
+        showPoweredByBanner: boolean;
+      };
+    };
+    elementsRoot: string;
+    connectedWalletType: string | null;
+    connectWallet: () => void;
+  }
 
-import { useChain } from "@cosmos-kit/react";
+  interface LeapElements {
+    mountElements: (args: mountElementsArgs) => void;
+    WalletType: any; // You can define this type more specifically if needed
+  }
+
+  // This makes LeapElements available on the Window object
+  interface Window {
+    LeapElements?: LeapElements;
+  }
+}
+
+
+
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import Web3 from "web3";
 import { PiXBold } from "react-icons/pi";
-import '@leapwallet/elements-umd-types'
-
-import { useConnectedWalletType } from "../hooks/use-connected-wallet-types";
+import '@leapwallet/elements-umd-types';
 
 export const renderLiquidityButton = ({ onClick }: any) => {
   return <button onClick={onClick} id="open-liquidity-modal-btn"></button>;
@@ -35,32 +62,41 @@ interface Props {
 }
 
 export function ElementsContainer({ isOpen, setIsOpen }: Props) {
-  const { openView, isWalletConnected, wallet } = useChain("stargaze");
-  const walletType = useConnectedWalletType(wallet?.name, isWalletConnected)
-  const [isElementsReady, setIsElementsReady] = useState(false)
+  const [account, setAccount] = useState<string | null>(null);
+  const [isElementsReady, setIsElementsReady] = useState(false);
+
+  const connectWallet = async () => {
+    if (typeof window.ethereum === "undefined") {
+      alert("MetaMask is not installed. Please install it to use this feature.");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      setAccount(accounts[0]);
+    } catch (error) {
+      console.error("Failed to connect MetaMask:", error);
+    }
+  };
 
   useEffect(() => {
     if (window.LeapElements && isElementsReady) {
       window.LeapElements.mountElements({
         element: {
-          name: 'aggregated-swaps',
+          name: "aggregated-swaps",
           props: {
-            title: 'Get STARS',
-            defaultValues: {
-              destinationChainId: 'stargaze-1',
-              destinationAsset: 'ustars'
-            },
-            sourceHeader: 'From',
-            destinationHeader: 'To',
+            title: "Get Tokens",
+            sourceHeader: "From",
+            destinationHeader: "To",
             showPoweredByBanner: true,
-          }
+          },
         },
         elementsRoot: "#swap-modal>.modal-container>.modal-body",
-        connectedWalletType: walletType,
-        connectWallet: openView,
+        connectedWalletType: account ? "metamask" : null,
+        connectWallet,
       });
     }
-  }, [walletType, openView, isElementsReady]);
+  }, [account, isElementsReady]);
 
   useEffect(() => {
     if (!window) {
@@ -85,13 +121,21 @@ export function ElementsContainer({ isOpen, setIsOpen }: Props) {
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }
   }, [isOpen]);
 
   return (
-    <Modal show={isOpen} onClose={() => setIsOpen(false)}/>
+    <Modal show={isOpen} onClose={() => setIsOpen(false)}>
+      {!account ? (
+        <button onClick={connectWallet} className="connect-wallet-button">
+          Connect MetaMask
+        </button>
+      ) : (
+        <div>Connected: {account.slice(0, 6)}...{account.slice(-4)}</div>
+      )}
+    </Modal>
   );
 }
